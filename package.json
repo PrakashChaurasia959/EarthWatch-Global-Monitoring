@@ -11,8 +11,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest --run",
-    "test:watch": "vitest",
-    "lint": "eslint . --max-warnings 0"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

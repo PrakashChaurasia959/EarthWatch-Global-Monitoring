@@ -8,7 +8,7 @@ import { ALL_CATEGORIES, CATEGORY_META } from '@/utils/categories';
 import { Spinner } from '@/components/ui/Skeleton';
 import { Layers, MapIcon, List, Satellite } from 'lucide-react';
 
-const BASE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const BASE_URL = 'https://{s}://{z}/{x}/{y}{r}.png?key=${import.meta.env.VITE_CARTO_API_KEY}';
 const BASE_ATTR = '&copy; OpenStreetMap contributors &copy; CARTO';
 
 interface WorldMapProps {

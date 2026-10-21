@@ -11,7 +11,7 @@ import { useLang } from '@/i18n/LanguageContext';
 
 // CARTO Voyager — a light, labeled basemap with recognizable country names.
 // Standard rastertiles do NOT require an API key; usage policy requires attribution.
-const BASE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+const BASE_URL = 'https://cartocdn.com{z}/{x}/{y}.png?key=cb1_4q19_1_e9c0d799a00c9e2678d75ddc';
 const BASE_ATTR = '&copy; OpenStreetMap contributors &copy; CARTO';
 
 type TilePhase = 'idle' | 'loading' | 'loaded' | 'error';

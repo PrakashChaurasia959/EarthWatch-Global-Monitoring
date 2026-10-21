@@ -1,28 +1,50 @@
-```typescript
 import type { GibsLayer } from '@/types/nasa';
 import { toIsoDate } from '@/utils/date';
+
+/**
+ * NASA GIBS — Global Imagery Browse Services.
+ *
+ * Public satellite imagery service. No API key required.
+ * Uses the EPSG:3857 WMTS RESTful tile endpoint.
+ *
+ * Calendar range:
+ *   Start: 2000-01-01
+ *   End:   2100-12-31
+ *
+ * Important:
+ * Calendar range does not guarantee that NASA imagery exists
+ * for every date or every imagery layer.
+ */
 
 const GIBS_WMTS =
   'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best';
 
 /**
- * Calendar boundaries.
- * These are calendar limits, not guarantees of NASA imagery coverage.
+ * Application calendar boundaries.
  */
 export const GIBS_EARLIEST = '2000-01-01';
+
 export const GIBS_CALENDAR_LAST_YEAR = 2100;
+
 export const GIBS_CALENDAR_LAST_DATE = '2100-12-31';
 
 /**
- * Return today's UTC date.
+ * Return today's date in ISO format.
+ *
+ * Uses the same date utility as the rest of the application.
+ * The optional timestamp is useful for testing.
  */
-export function gibsToday(now: number = Date.now()): string {
+export function gibsToday(
+  now: number = Date.now(),
+): string {
   return toIsoDate(now);
 }
 
 /**
- * Calendar's maximum imagery-request date.
- * NASA imagery requests must not use future dates.
+ * Return the latest date allowed for NASA imagery requests.
+ *
+ * Future imagery dates are not requested because future
+ * satellite observations are not available yet.
  */
 export function gibsMaxSelectableDate(
   now: number = Date.now(),
@@ -31,29 +53,44 @@ export function gibsMaxSelectableDate(
 }
 
 /**
- * Return the years displayed by the calendar.
- * This is independent of the actual imagery availability.
+ * Return all years displayed by the date picker.
+ *
+ * This list is independent of the imagery availability.
  */
 export function gibsCalendarYears(): number[] {
-  const firstYear = Number(GIBS_EARLIEST.slice(0, 4));
+  const firstYear = Number(
+    GIBS_EARLIEST.slice(0, 4),
+  );
 
   return Array.from(
     {
-      length: GIBS_CALENDAR_LAST_YEAR - firstYear + 1,
+      length:
+        GIBS_CALENDAR_LAST_YEAR - firstYear + 1,
     },
     (_, index) => firstYear + index,
   );
 }
 
 /**
- * Validate an ISO calendar date without accepting impossible dates.
+ * Strictly validate an ISO date.
+ *
+ * Accepted format: YYYY-MM-DD
+ *
+ * Rejects invalid dates such as:
+ * 2026-02-31
+ * 2026-13-01
+ * abc
  */
-function isValidIsoDate(date: string): boolean {
+function isValidIsoDate(
+  date: string,
+): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return false;
   }
 
-  const parsed = new Date(`${date}T00:00:00.000Z`);
+  const parsed = new Date(
+    `${date}T00:00:00.000Z`,
+  );
 
   return (
     !Number.isNaN(parsed.getTime()) &&
@@ -62,8 +99,11 @@ function isValidIsoDate(date: string): boolean {
 }
 
 /**
- * Check whether the date belongs to the application's calendar range.
- * Future dates can be within this range.
+ * Check whether a date falls within the application's
+ * calendar range: 2000-01-01 through 2100-12-31.
+ *
+ * Future dates can belong to the calendar range,
+ * even though they cannot be used for imagery requests.
  */
 export function isGibsDateInCalendarRange(
   date: string,
@@ -76,8 +116,14 @@ export function isGibsDateInCalendarRange(
 }
 
 /**
- * Check whether a date can be used for a real imagery request.
- * Dates after today are rejected.
+ * Check whether a date is valid for an actual imagery request.
+ *
+ * The date must:
+ * - Be a valid ISO date.
+ * - Be inside the application's calendar range.
+ * - Not be later than today.
+ *
+ * The optional timestamp supports deterministic tests.
  */
 export function isGibsDateSelectable(
   date: string,
@@ -90,12 +136,20 @@ export function isGibsDateSelectable(
 }
 
 /**
- * Use yesterday as the initial layer date to account for processing delays.
+ * Return yesterday's date.
+ *
+ * NASA imagery may have processing delays, so yesterday
+ * is used as the initial imagery date.
  */
 function getYesterday(): string {
-  return toIsoDate(Date.now() - 24 * 60 * 60 * 1000);
+  return toIsoDate(
+    Date.now() - 24 * 60 * 60 * 1000,
+  );
 }
 
+/**
+ * NASA GIBS imagery layers supported by Satellite Explorer.
+ */
 export const GIBS_LAYERS: GibsLayer[] = [
   {
     id: 'MODIS_Terra_CorrectedReflectance_TrueColor',
@@ -166,7 +220,8 @@ export const GIBS_LAYERS: GibsLayer[] = [
   {
     id: 'MODIS_Terra_Aerosol',
     title: 'MODIS Terra Aerosol Optical Depth',
-    subtitle: 'Smoke, dust, and haze aerosol optical depth',
+    subtitle:
+      'Smoke, dust, and haze aerosol optical depth',
     matrixSet: 'GoogleMapsCompatible_Level6',
     maxLevel: 6,
     temporal: true,
@@ -187,9 +242,12 @@ export const GIBS_LAYERS: GibsLayer[] = [
 ];
 
 /**
- * Construct a Leaflet-compatible GIBS tile URL.
- * Reject invalid and future imagery dates rather than silently substituting
- * a different date.
+ * Build a Leaflet-compatible NASA GIBS tile URL.
+ *
+ * Leaflet replaces {z}, {y}, and {x} with tile coordinates.
+ *
+ * Invalid or future dates are rejected instead of silently
+ * displaying imagery for a different date.
  */
 export function gibsTileTemplate(
   layer: GibsLayer,
@@ -198,7 +256,7 @@ export function gibsTileTemplate(
   if (!isGibsDateSelectable(date)) {
     throw new RangeError(
       `Invalid imagery date "${date}". Choose a date from ` +
-      `${GIBS_EARLIEST} through ${gibsMaxSelectableDate()}.`,
+        `${GIBS_EARLIEST} through ${gibsMaxSelectableDate()}.`,
     );
   }
 
@@ -210,5 +268,8 @@ export function gibsTileTemplate(
   );
 }
 
-export const GIBS_ATTRIBUTION = 'Imagery © NASA GIBS';
-```
+/**
+ * Attribution required for NASA GIBS imagery.
+ */
+export const GIBS_ATTRIBUTION =
+  'Imagery © NASA GIBS';

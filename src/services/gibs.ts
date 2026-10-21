@@ -1,75 +1,52 @@
+```typescript
 import type { GibsLayer } from '@/types/nasa';
 import { toIsoDate } from '@/utils/date';
-
-/**
- * NASA GIBS (Global Imagery Browse Services)
- *
- * Public satellite imagery service. No API key required.
- * Uses the EPSG:3857 WMTS RESTful tile endpoint.
- *
- * Date handling:
- * - Earliest supported calendar date: 2012-01-01.
- * - Maximum selectable date: current UTC date.
- * - No hardcoded current year.
- * - Future dates are not selectable.
- * - Actual imagery availability depends on the selected layer.
- */
 
 const GIBS_WMTS =
   'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best';
 
 /**
- * Generate yesterday's date dynamically.
- * Used as a sensible default for imagery processing delays.
+ * Calendar boundaries.
+ * These are calendar limits, not guarantees of NASA imagery coverage.
  */
-function getYesterday(): string {
-  return toIsoDate(Date.now() - 24 * 60 * 60 * 1000);
-}
+export const GIBS_EARLIEST = '2000-01-01';
+export const GIBS_CALENDAR_LAST_YEAR = 2100;
+export const GIBS_CALENDAR_LAST_DATE = '2100-12-31';
 
 /**
- * Earliest calendar date exposed by this application.
- *
- * IMPORTANT:
- * This is a calendar boundary, not a guarantee that every layer
- * has imagery available from this date.
+ * Return today's UTC date.
  */
-export const GIBS_EARLIEST = '2012-01-01';
-
-/**
- * Return the current UTC date.
- *
- * The value is calculated dynamically rather than hardcoded to a year,
- * so the application continues working in future years.
- *
- * The optional timestamp makes this function deterministic in tests.
- */
-export function gibsMaxSelectableDate(
-  now: number = Date.now(),
-): string {
+export function gibsToday(now: number = Date.now()): string {
   return toIsoDate(now);
 }
 
 /**
- * Check whether a date is inside the application's supported
- * calendar range and is not in the future.
+ * Calendar's maximum imagery-request date.
+ * NASA imagery requests must not use future dates.
  */
-export function isGibsDateSelectable(
-  date: string,
+export function gibsMaxSelectableDate(
   now: number = Date.now(),
-): boolean {
-  if (!isValidIsoDate(date)) {
-    return false;
-  }
+): string {
+  return gibsToday(now);
+}
 
-  return (
-    date >= GIBS_EARLIEST &&
-    date <= gibsMaxSelectableDate(now)
+/**
+ * Return the years displayed by the calendar.
+ * This is independent of the actual imagery availability.
+ */
+export function gibsCalendarYears(): number[] {
+  const firstYear = Number(GIBS_EARLIEST.slice(0, 4));
+
+  return Array.from(
+    {
+      length: GIBS_CALENDAR_LAST_YEAR - firstYear + 1,
+    },
+    (_, index) => firstYear + index,
   );
 }
 
 /**
- * Strictly validate YYYY-MM-DD dates.
- * Prevents invalid dates such as 2026-02-31.
+ * Validate an ISO calendar date without accepting impossible dates.
  */
 function isValidIsoDate(date: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -78,16 +55,47 @@ function isValidIsoDate(date: string): boolean {
 
   const parsed = new Date(`${date}T00:00:00.000Z`);
 
-  if (Number.isNaN(parsed.getTime())) {
-    return false;
-  }
-
-  return parsed.toISOString().slice(0, 10) === date;
+  return (
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === date
+  );
 }
 
 /**
- * Curated raster imagery layers supported by the Satellite Explorer.
+ * Check whether the date belongs to the application's calendar range.
+ * Future dates can be within this range.
  */
+export function isGibsDateInCalendarRange(
+  date: string,
+): boolean {
+  return (
+    isValidIsoDate(date) &&
+    date >= GIBS_EARLIEST &&
+    date <= GIBS_CALENDAR_LAST_DATE
+  );
+}
+
+/**
+ * Check whether a date can be used for a real imagery request.
+ * Dates after today are rejected.
+ */
+export function isGibsDateSelectable(
+  date: string,
+  now: number = Date.now(),
+): boolean {
+  return (
+    isGibsDateInCalendarRange(date) &&
+    date <= gibsMaxSelectableDate(now)
+  );
+}
+
+/**
+ * Use yesterday as the initial layer date to account for processing delays.
+ */
+function getYesterday(): string {
+  return toIsoDate(Date.now() - 24 * 60 * 60 * 1000);
+}
+
 export const GIBS_LAYERS: GibsLayer[] = [
   {
     id: 'MODIS_Terra_CorrectedReflectance_TrueColor',
@@ -126,7 +134,7 @@ export const GIBS_LAYERS: GibsLayer[] = [
     id: 'MODIS_Terra_CorrectedReflectance_Bands721',
     title: 'MODIS Terra False Color (Bands 7-2-1)',
     subtitle:
-      'False-color view highlighting vegetation, burn scars, and snow',
+      'False-color imagery highlighting vegetation, burn scars, and snow',
     matrixSet: 'GoogleMapsCompatible_Level9',
     maxLevel: 9,
     temporal: true,
@@ -158,8 +166,7 @@ export const GIBS_LAYERS: GibsLayer[] = [
   {
     id: 'MODIS_Terra_Aerosol',
     title: 'MODIS Terra Aerosol Optical Depth',
-    subtitle:
-      'Smoke, dust, and haze aerosol optical depth',
+    subtitle: 'Smoke, dust, and haze aerosol optical depth',
     matrixSet: 'GoogleMapsCompatible_Level6',
     maxLevel: 6,
     temporal: true,
@@ -180,28 +187,28 @@ export const GIBS_LAYERS: GibsLayer[] = [
 ];
 
 /**
- * Build a Leaflet-compatible NASA GIBS tile URL.
- *
- * The selected date is supplied by the component.
- * Leaflet substitutes z, x, and y for each tile request.
+ * Construct a Leaflet-compatible GIBS tile URL.
+ * Reject invalid and future imagery dates rather than silently substituting
+ * a different date.
  */
 export function gibsTileTemplate(
   layer: GibsLayer,
   date: string,
 ): string {
-  const safeDate = isGibsDateSelectable(date)
-    ? date
-    : gibsMaxSelectableDate();
+  if (!isGibsDateSelectable(date)) {
+    throw new RangeError(
+      `Invalid imagery date "${date}". Choose a date from ` +
+      `${GIBS_EARLIEST} through ${gibsMaxSelectableDate()}.`,
+    );
+  }
 
   return (
     `${GIBS_WMTS}/` +
     `${encodeURIComponent(layer.id)}/default/` +
-    `${safeDate}/` +
+    `${date}/` +
     `${layer.matrixSet}/{z}/{y}/{x}.${layer.format}`
   );
 }
 
-/**
- * Attribution required for NASA GIBS imagery.
- */
 export const GIBS_ATTRIBUTION = 'Imagery © NASA GIBS';
+```

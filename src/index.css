@@ -16,6 +16,7 @@
   body {
     @apply bg-space-950 text-slate-200 antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-family: 'Inter', 'Noto Sans Devanagari', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     background-image:
       radial-gradient(1100px 560px at 82% -12%, rgba(96, 165, 250, 0.1), transparent 60%),
       radial-gradient(900px 480px at -12% 8%, rgba(167, 139, 250, 0.09), transparent 60%),
@@ -105,51 +106,81 @@
   }
 }
 
-/* Leaflet adaptations for dark theme */
+/* Leaflet adaptations for the light CARTO Voyager basemap */
 .leaflet-container {
-  background: #0a0e1a !important;
+  background: #e8eef4 !important;
   font-family: inherit !important;
 }
-.leaflet-bar,
-.leaflet-control-attribution {
-  background: rgba(13, 18, 32, 0.85) !important;
-  color: #cbd5e1 !important;
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+.leaflet-bar {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
+  box-shadow: 0 4px 14px -6px rgba(15, 23, 42, 0.3) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
 }
 .leaflet-bar a {
   background: transparent !important;
-  color: #e2e8f0 !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
 }
 .leaflet-bar a:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(15, 23, 42, 0.06) !important;
+}
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.88) !important;
+  color: #475569 !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  border-radius: 8px 0 0 0 !important;
+  padding: 2px 6px !important;
+  font-size: 10px !important;
 }
 .leaflet-control-attribution a {
-  color: #93c5fd !important;
+  color: #2563eb !important;
 }
 .leaflet-popup-content-wrapper {
-  background: rgba(13, 18, 32, 0.96) !important;
-  color: #e2e8f0 !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
   border-radius: 14px !important;
-  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.8) !important;
+  box-shadow: 0 12px 32px -10px rgba(15, 23, 42, 0.35) !important;
 }
 .leaflet-popup-tip {
-  background: rgba(13, 18, 32, 0.96) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
 }
 .leaflet-popup-content {
   margin: 12px 14px !important;
   font-family: inherit !important;
 }
+.leaflet-popup-content a {
+  color: #2563eb !important;
+}
 .leaflet-popup-close-button {
-  color: #94a3b8 !important;
+  color: #64748b !important;
   padding: 6px 6px 0 0 !important;
+  font-size: 20px !important;
+}
+.leaflet-popup-close-button:hover {
+  color: #0f172a !important;
 }
 .leaflet-div-icon {
   background: transparent !important;
   border: none !important;
+}
+
+/* Dark glass used for controls/labels sitting on the light basemap */
+.ew-glass-dark {
+  background: rgba(10, 14, 26, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
 }
 
 /* Custom event markers (divIcon-based, no external images) */
@@ -175,19 +206,19 @@
   inset: 0;
   border-radius: 9999px;
   background: var(--c);
-  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 0 0 1px rgba(5, 7, 15, 0.6);
 }
 .marker-cluster-small,
 .marker-cluster-medium,
 .marker-cluster-large {
-  background-color: rgba(34, 211, 238, 0.12) !important;
-  color: #e2e8f0 !important;
+  background-color: rgba(15, 23, 42, 0.72) !important;
+  color: #f1f5f9 !important;
 }
 .marker-cluster-small div,
 .marker-cluster-medium div,
 .marker-cluster-large div {
-  background-color: rgba(34, 211, 238, 0.28) !important;
+  background-color: rgba(34, 211, 238, 0.35) !important;
   color: #ecfeff !important;
 }
 

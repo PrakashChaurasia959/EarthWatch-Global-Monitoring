@@ -6,48 +6,48 @@ import { MagnitudeDistribution } from '@/components/charts/MagnitudeDistribution
 import { Select } from '@/components/ui/Select';
 import { useErrorToast } from '@/components/ui/Toast';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { useLang } from '@/i18n/LanguageContext';
 import type { QuakeWindow } from '@/types/earthquake';
 import { MAGNITUDE_BANDS } from '@/utils/format';
 
-const WINDOWS: { value: QuakeWindow; label: string }[] = [
-  { value: 'hour', label: 'Past hour' },
-  { value: 'day', label: 'Past 24 hours' },
-  { value: 'week', label: 'Past 7 days' },
-  { value: 'month', label: 'Past 30 days' },
-];
+const WINDOW_KEYS = ['hour', 'day', 'week', 'month'] as const;
 
 export default function Earthquakes() {
+  const { t } = useLang();
   const [window, setWindow] = useState<QuakeWindow>('day');
   const { events, loading, error, stale, status, lastUpdated, generated, refresh } = useEarthquakes(window, 0);
 
-  useErrorToast(error, 'USGS earthquake feed error');
+  useErrorToast(error, t('error.sourceUnavailable'));
 
   const largest = useMemo(() => {
     if (events.length === 0) return null;
-    return events.reduce((max, e) => ((e.magnitude ?? -Infinity) > (max.magnitude ?? -Infinity) ? e : max), events[0]);
+    return events.reduce(
+      (max, e) => ((e.magnitude ?? -Infinity) > (max.magnitude ?? -Infinity) ? e : max),
+      events[0],
+    );
   }, [events]);
 
   return (
     <div className="space-y-4 sm:space-y-5 animate-fade-in">
       <PageHeader
         icon={<Waves size={18} />}
-        title="Earthquakes"
-        subtitle="USGS Earthquake Hazards Program — real seismic data from earthquake.usgs.gov"
+        title={t('eq.title')}
+        subtitle={t('eq.subtitle')}
         action={
           <Select
-            ariaLabel="Time window"
+            ariaLabel={t('eq.window.day')}
             value={window}
             onChange={(v) => setWindow(v as QuakeWindow)}
-            options={WINDOWS}
-            className="w-40"
+            options={WINDOW_KEYS.map((w) => ({ value: w, label: t(`eq.window.${w}` as never) }))}
+            className="w-44"
           />
         }
       />
 
       {/* Magnitude legend */}
       <div className="card p-3">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-400">
-          <span className="text-slate-500 font-medium">Magnitude legend:</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400">
+          <span className="text-slate-500 font-medium">{t('eq.magLegend')}:</span>
           {MAGNITUDE_BANDS.map((b) => (
             <span key={b.label} className="inline-flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: b.color, boxShadow: `0 0 6px ${b.glow}` }} />
@@ -55,7 +55,7 @@ export default function Earthquakes() {
             </span>
           ))}
           <span className="ml-auto text-[11px] text-slate-500">
-            {largest ? `Largest this window: M ${largest.magnitude?.toFixed(2)} · ${largest.title}` : ''}
+            {largest ? `${t('eq.largest')}: M ${largest.magnitude?.toFixed(2)} · ${largest.title}` : ''}
           </span>
         </div>
       </div>
@@ -71,15 +71,12 @@ export default function Earthquakes() {
         availableCategories={['earthquake']}
         showMagnitudeFilter
         mapHeight="h-[440px] sm:h-[520px]"
-        attribution="USGS Earthquake API (fdsnws/event/1)"
+        attribution={t('eq.attribution')}
       />
 
       <MagnitudeDistribution events={events} />
 
-      <p className="text-[11px] text-slate-500">
-        Data © USGS Earthquake Hazards Program. Magnitude type and significance are provided by USGS where available.
-        Smaller-magnitude events dominate the feed; the map caps displayed markers for performance.
-      </p>
+      <p className="text-[11px] text-slate-500">{t('eq.note')}</p>
     </div>
   );
 }

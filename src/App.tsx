@@ -4,9 +4,11 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { ToastProvider } from '@/components/ui/Toast';
 import { DataProvider } from '@/store/DataContext';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { LanguageProvider } from '@/i18n/LanguageContext';
 import { PageLoader } from '@/components/ui/PageLoader';
 
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const WorldMapPage = lazy(() => import('@/pages/WorldMapPage'));
 const Earthquakes = lazy(() => import('@/pages/Earthquakes'));
 const Wildfires = lazy(() => import('@/pages/Wildfires'));
 const NaturalEvents = lazy(() => import('@/pages/NaturalEvents'));
@@ -15,81 +17,32 @@ const Analytics = lazy(() => import('@/pages/Analytics'));
 const About = lazy(() => import('@/pages/About'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 
+function withSuspense(node: React.ReactNode) {
+  return <Suspense fallback={<PageLoader />}>{node}</Suspense>;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
-      <ToastProvider>
-        <DataProvider>
-          <Routes>
-            <Route element={<AppLayout />}>
-              <Route
-                index
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <Dashboard />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="earthquakes"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <Earthquakes />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="wildfires"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <Wildfires />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="natural-events"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <NaturalEvents />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="satellite"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <SatelliteExplorer />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="analytics"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <Analytics />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="about"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <About />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="*"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <NotFound />
-                  </Suspense>
-                }
-              />
-            </Route>
-          </Routes>
-        </DataProvider>
-      </ToastProvider>
+      <LanguageProvider>
+        <ToastProvider>
+          <DataProvider>
+            <Routes>
+              <Route element={<AppLayout />}>
+                <Route index element={withSuspense(<Dashboard />)} />
+                <Route path="map" element={withSuspense(<WorldMapPage />)} />
+                <Route path="earthquakes" element={withSuspense(<Earthquakes />)} />
+                <Route path="wildfires" element={withSuspense(<Wildfires />)} />
+                <Route path="natural-events" element={withSuspense(<NaturalEvents />)} />
+                <Route path="satellite" element={withSuspense(<SatelliteExplorer />)} />
+                <Route path="analytics" element={withSuspense(<Analytics />)} />
+                <Route path="about" element={withSuspense(<About />)} />
+                <Route path="*" element={withSuspense(<NotFound />)} />
+              </Route>
+            </Routes>
+          </DataProvider>
+        </ToastProvider>
+      </LanguageProvider>
     </ErrorBoundary>
   );
 }

@@ -7,36 +7,27 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useErrorToast } from '@/components/ui/Toast';
+import { useLang } from '@/i18n/LanguageContext';
 import { FIRMS_CONFIGURED } from '@/config/env';
 import { GIBS_LAYERS } from '@/services/gibs';
 import type { FirmsSource } from '@/types/firms';
 import type { NormalizedEvent } from '@/types/common';
 
-const SOURCES: { value: FirmsSource; label: string }[] = [
-  { value: 'VIIRS_SNPP', label: 'VIIRS Suomi-NPP' },
-  { value: 'VIIRS_NOAA20', label: 'VIIRS NOAA-20' },
-  { value: 'MODIS', label: 'MODIS Terra/Aqua' },
-];
+const SOURCES: FirmsSource[] = ['VIIRS_SNPP', 'VIIRS_NOAA20', 'MODIS'];
+const DAYS = [1, 2, 3];
 
-const DAYS: { value: number; label: string }[] = [
-  { value: 1, label: 'Last 24 hours' },
-  { value: 2, label: 'Last 48 hours' },
-  { value: 3, label: 'Last 72 hours' },
-];
-
-// Raster MODIS true-color overlay lets users see smoke plumes near fire markers.
-// (GIBS thermal-anomaly layers are now vector tiles, so we use a raster layer.)
 const smokeContextLayer = GIBS_LAYERS.find((l) => l.id === 'MODIS_Terra_CorrectedReflectance_TrueColor');
 
 export default function Wildfires() {
+  const { t } = useLang();
   const [source, setSource] = useState<FirmsSource>('VIIRS_SNPP');
   const [days, setDays] = useState<number>(1);
 
   const fires = useFires(source, days);
   const eonetFires = useEonetEvents('wildfires', 'open', 300);
 
-  useErrorToast(fires.configured ? fires.error : null, 'FIRMS fire feed error');
-  useErrorToast(eonetFires.error, 'EONET wildfire feed error');
+  useErrorToast(fires.configured ? fires.error : null, t('error.sourceUnavailable'));
+  useErrorToast(eonetFires.error, t('error.sourceUnavailable'));
 
   const combined: NormalizedEvent[] = useMemo(
     () => [...fires.events, ...eonetFires.events],
@@ -62,23 +53,23 @@ export default function Wildfires() {
     <div className="space-y-4 sm:space-y-5 animate-fade-in">
       <PageHeader
         icon={<Flame size={18} />}
-        title="Wildfires"
-        subtitle="Active fire detections from NASA FIRMS and wildfire events from NASA EONET"
+        title={t('fire.title')}
+        subtitle={t('fire.subtitle')}
         action={
           <div className="flex items-center gap-2 flex-wrap">
             <Select
-              ariaLabel="Detection source"
+              ariaLabel={t('fire.detectionSource')}
               value={source}
               onChange={(v) => setSource(v as FirmsSource)}
-              options={SOURCES}
+              options={SOURCES.map((s) => ({ value: s, label: t(`fire.source.${s}` as never) }))}
               className="w-44"
               disabled={!FIRMS_CONFIGURED}
             />
             <Select
-              ariaLabel="Look-back period"
+              ariaLabel={t('fire.lookback')}
               value={days}
               onChange={(v) => setDays(v as number)}
-              options={DAYS}
+              options={DAYS.map((d) => ({ value: d, label: t(`fire.days.${d}` as never) }))}
               className="w-40"
               disabled={!FIRMS_CONFIGURED}
             />
@@ -91,17 +82,13 @@ export default function Wildfires() {
           <div className="flex items-start gap-3">
             <KeyRound size={20} className="text-accent-amber shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-slate-100">NASA FIRMS not configured</p>
-              <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-                Near-real-time fire detections require a free FIRMS MAP_KEY. The page below is still showing
-                real, public wildfire events from NASA EONET so you can explore the data. Add a key to enable
-                FIRMS high-resolution active-fire detections.
-              </p>
+              <p className="text-sm font-semibold text-slate-100">{t('fire.notConfiguredTitle')}</p>
+              <p className="text-sm text-slate-400 mt-1 max-w-2xl">{t('fire.notConfiguredDesc')}</p>
               <ol className="mt-3 space-y-1 text-xs text-slate-400 list-decimal list-inside">
-                <li>Register at firms.modaps.eosdis.nasa.gov/api/map_key/ to get a MAP_KEY.</li>
-                <li>Create a <code className="text-accent-cyan">.env</code> file and set <code className="text-accent-cyan">VITE_FIRMS_MAP_KEY=</code> to your key.</li>
-                <li>The MAP_KEY is a usage-tracking token meant for client request URLs — safe to expose in the browser.</li>
-                <li>Restart the dev server, then refresh this page.</li>
+                <li>{t('fire.step1')}</li>
+                <li>{t('fire.step2')}</li>
+                <li>{t('fire.step3')}</li>
+                <li>{t('fire.step4')}</li>
               </ol>
             </div>
           </div>
@@ -112,11 +99,13 @@ export default function Wildfires() {
         <div className="card p-4 flex items-start gap-3 border-accent-rose/20" role="alert">
           <AlertTriangle size={18} className="text-accent-rose shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-slate-200">FIRMS request failed</p>
+            <p className="text-sm font-medium text-slate-200">{t('fire.firmsFailedTitle')}</p>
             <p className="text-xs text-slate-400 mt-0.5">{fires.error}</p>
-            <p className="text-xs text-slate-400 mt-1">Showing EONET wildfire events where available.</p>
+            <p className="text-xs text-slate-400 mt-1">{t('fire.firmsFailedNote')}</p>
           </div>
-          <Button onClick={refresh} variant="outline" size="sm">Retry</Button>
+          <Button onClick={refresh} variant="outline" size="sm">
+            {t('common.retry')}
+          </Button>
         </div>
       )}
 
@@ -130,26 +119,21 @@ export default function Wildfires() {
         onRefresh={refresh}
         availableCategories={['wildfire']}
         mapHeight="h-[440px] sm:h-[520px]"
-        attribution={
-          FIRMS_CONFIGURED
-            ? 'NASA FIRMS (active fire detections) + NASA EONET (wildfire events)'
-            : 'NASA EONET wildfire events (FIRMS not configured)'
-        }
+        attribution={FIRMS_CONFIGURED ? t('fire.attrConfigured') : t('fire.attrFallback')}
         gibs={smokeContextLayer}
         emptyWhenNoConfig={{
-          title: 'No wildfire events available',
-          description:
-            'Neither FIRMS nor EONET returned wildfire records in this session. Try refreshing, or check the live source pages linked in About.',
+          title: t('fire.empty.title'),
+          description: t('fire.empty.desc'),
         }}
       />
 
       <div className="card p-4">
-        <h3 className="text-sm font-semibold text-slate-100 mb-2">About this data</h3>
+        <h3 className="text-sm font-semibold text-slate-100 mb-2">{t('fire.aboutData')}</h3>
         <ul className="space-y-1.5 text-xs text-slate-400 list-disc list-inside">
-          <li><b>FIRMS</b> provides near-real-time active fire detections from MODIS and VIIRS, including brightness, confidence, and fire radiative power.</li>
-          <li><b>EONET wildfires</b> aggregates wildfire events from multiple sources; coordinates mark an event, not every individual detection.</li>
-          <li>Detection confidence and FRP are shown in the event detail panel where supplied.</li>
-          <li>EONET is not an official emergency-warning system and may lag real-time activity.</li>
+          <li>{t('fire.about1')}</li>
+          <li>{t('fire.about2')}</li>
+          <li>{t('fire.about3')}</li>
+          <li>{t('fire.about4')}</li>
         </ul>
       </div>
     </div>

@@ -12,26 +12,27 @@ import {
 import type { NormalizedEvent } from '@/types/common';
 import { eventsTrendByDay } from '@/utils/charts';
 import { ChartShell, CHART_GRID } from './ChartShell';
+import { useLang } from '@/i18n/LanguageContext';
 
 export function EventTrendChart({
   events,
   days = 14,
-  title = 'Event trend',
 }: {
   events: NormalizedEvent[];
   days?: number;
   title?: string;
 }) {
+  const { t } = useLang();
   const data = useMemo(() => eventsTrendByDay(events, days), [events, days]);
   const isEmpty = data.every((d) => d.total === 0);
 
   return (
     <ChartShell
-      title={title}
-      subtitle={`Daily counts over the last ${days} days (from loaded records)`}
+      title={t('chart.trend')}
+      subtitle={t('chart.trendSub', { n: days })}
       isEmpty={isEmpty}
-      emptyTitle="No trend data"
-      emptyDescription="Once events load, a daily trend will appear here. Note: loaded feeds cover limited history."
+      emptyTitle={t('chart.noTrend')}
+      emptyDescription={t('chart.noTrendDesc')}
       height={260}
     >
       <ResponsiveContainer>

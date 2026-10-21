@@ -23,15 +23,11 @@ import { eventsByRegion, magnitudeBands, eventsByCategory } from '@/utils/charts
 import { toCsv, downloadCsv } from '@/utils/csv';
 import { categoryLabel } from '@/utils/categories';
 import { useToast } from '@/components/ui/Toast';
-
-const PERIODS = [
-  { value: 7, label: 'Last 7 days' },
-  { value: 14, label: 'Last 14 days' },
-  { value: 30, label: 'Last 30 days' },
-];
+import { useLang } from '@/i18n/LanguageContext';
 
 export default function Analytics() {
   const { allEvents, earthquakes } = useDataStore();
+  const { t } = useLang();
   const { toast } = useToast();
   const [days, setDays] = useState(14);
 
@@ -42,46 +38,49 @@ export default function Analytics() {
 
   const exportCsv = () => {
     if (totalRecords === 0) {
-      toast('No records loaded to export', { variant: 'info' });
+      toast(t('an.noExport'), { variant: 'info' });
       return;
     }
     const csv = toCsv(allEvents);
     const stamp = new Date().toISOString().slice(0, 10);
     downloadCsv(`earthwatch-events-${stamp}.csv`, csv);
-    toast(`Exported ${totalRecords.toLocaleString()} records to CSV`, { variant: 'success' });
+    toast(t('an.exportedToast', { n: totalRecords.toLocaleString() }), { variant: 'success' });
   };
 
   const summary = useMemo(() => {
     const withCoords = allEvents.filter((e) => e.longitude != null && e.latitude != null).length;
     const withMag = earthquakes.events.filter((e) => e.magnitude != null).length;
-    return {
-      total: totalRecords,
-      withCoords,
-      withMag,
-      categories: catData.length,
-    };
+    return { total: totalRecords, withCoords, withMag, categories: catData.length };
   }, [allEvents, earthquakes.events, totalRecords, catData.length]);
+
+  const periodOptions = [
+    { value: 7, label: t('an.last7') },
+    { value: 14, label: t('an.last14') },
+    { value: 30, label: t('an.last30') },
+  ];
+
+  const stats = [
+    { label: t('an.recordsLoaded'), value: summary.total },
+    { label: t('an.withCoords'), value: summary.withCoords },
+    { label: t('an.withMag'), value: summary.withMag },
+    { label: t('an.categories'), value: summary.categories },
+  ];
 
   return (
     <div className="space-y-4 sm:space-y-5 animate-fade-in">
       <PageHeader
         icon={<BarChart3 size={18} />}
-        title="Analytics"
-        subtitle="Data-driven views over currently loaded records — all figures derive from real API responses"
+        title={t('an.title')}
+        subtitle={t('an.subtitle')}
         action={
           <Button onClick={exportCsv} variant="primary" icon={<Download size={15} />}>
-            Export CSV
+            {t('an.export')}
           </Button>
         }
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Records loaded', value: summary.total },
-          { label: 'With coordinates', value: summary.withCoords },
-          { label: 'With magnitude', value: summary.withMag },
-          { label: 'Categories', value: summary.categories },
-        ].map((s) => (
+        {stats.map((s) => (
           <Card key={s.label} className="p-3">
             <p className="text-2xl font-bold text-slate-100 tabular-nums">{s.value.toLocaleString()}</p>
             <p className="text-xs text-slate-400 mt-0.5">{s.label}</p>
@@ -90,15 +89,9 @@ export default function Analytics() {
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <Select
-          label="Trend period"
-          value={days}
-          onChange={(v) => setDays(v as number)}
-          options={PERIODS}
-          className="w-44"
-        />
+        <Select label={t('an.trendPeriod')} value={days} onChange={(v) => setDays(v as number)} options={periodOptions} className="w-44" />
         <p className="text-[11px] text-slate-500 flex items-center gap-1.5 sm:mt-5">
-          <Info size={12} /> Trends reflect loaded records only; feeds cover limited history (e.g. USGS day feed ≈ 24h).
+          <Info size={12} /> {t('an.trendNote')}
         </p>
       </div>
 
@@ -109,13 +102,12 @@ export default function Analytics() {
         <EventCategoryChart events={allEvents} />
       </div>
 
-      {/* Magnitude band summary (table-ish bar) */}
       <ChartShell
-        title="Earthquake magnitude bands"
-        subtitle="Count of USGS events in each magnitude band"
+        title={t('an.magBandsTitle')}
+        subtitle={t('an.magBandsSub')}
         isEmpty={magData.every((d) => d.count === 0)}
-        emptyTitle="No earthquake data"
-        emptyDescription="Magnitude band counts appear once USGS data loads."
+        emptyTitle={t('an.noQuake')}
+        emptyDescription={t('an.noQuakeDesc')}
         height={220}
       >
         <ResponsiveContainer>
@@ -126,7 +118,7 @@ export default function Analytics() {
             <Tooltip
               cursor={{ fill: 'rgba(255,255,255,0.04)' }}
               contentStyle={{ background: 'rgba(13,18,32,0.96)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#e2e8f0', fontSize: 12 }}
-              formatter={(v: number) => [`${v} events`, '']}
+              formatter={(v: number) => [`${v} ${t('chart.eventsLabel')}`, '']}
             />
             <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={28}>
               {magData.map((_, i) => (
@@ -137,13 +129,12 @@ export default function Analytics() {
         </ResponsiveContainer>
       </ChartShell>
 
-      {/* Regional summary */}
       <ChartShell
-        title="Regional summary"
-        subtitle="Approximate region buckets from loaded event coordinates"
+        title={t('an.regionTitle')}
+        subtitle={t('an.regionSub')}
         isEmpty={regionData.length === 0}
-        emptyTitle="No geocoded events"
-        emptyDescription="Regional counts appear once events with coordinates are loaded."
+        emptyTitle={t('an.noGeo')}
+        emptyDescription={t('an.noGeoDesc')}
         height={Math.max(200, regionData.length * 36)}
       >
         <ResponsiveContainer>
@@ -154,7 +145,7 @@ export default function Analytics() {
             <Tooltip
               cursor={{ fill: 'rgba(255,255,255,0.04)' }}
               contentStyle={{ background: 'rgba(13,18,32,0.96)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#e2e8f0', fontSize: 12 }}
-              formatter={(v: number) => [`${v} events`, '']}
+              formatter={(v: number) => [`${v} ${t('chart.eventsLabel')}`, '']}
             />
             <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={28}>
               {regionData.map((_, i) => (
@@ -166,7 +157,7 @@ export default function Analytics() {
       </ChartShell>
 
       <Card>
-        <h3 className="text-sm font-semibold text-slate-100 mb-2">Category breakdown</h3>
+        <h3 className="text-sm font-semibold text-slate-100 mb-2">{t('an.catBreakdown')}</h3>
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
           {catData.map((c) => (
             <li key={c.category} className="flex items-center justify-between gap-2 py-1 border-b border-white/5">
@@ -177,15 +168,11 @@ export default function Analytics() {
               <span className="tabular-nums text-slate-400">{c.value.toLocaleString()}</span>
             </li>
           ))}
-          {catData.length === 0 && <li className="text-slate-500">No categories loaded.</li>}
+          {catData.length === 0 && <li className="text-slate-500">{t('an.noCats')}</li>}
         </ul>
       </Card>
 
-      <p className="text-[11px] text-slate-500">
-        CSV export includes all {totalRecords.toLocaleString()} currently loaded records with their id, source,
-        category, coordinates, magnitude, depth, confidence, and source URL. We never export data that was not
-        fetched in this session.
-      </p>
+      <p className="text-[11px] text-slate-500">{t('an.exportFooter', { n: totalRecords.toLocaleString() })}</p>
     </div>
   );
 }

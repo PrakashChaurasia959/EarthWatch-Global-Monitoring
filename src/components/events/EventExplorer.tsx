@@ -11,6 +11,7 @@ import { applyEventFilters, DEFAULT_FILTERS, type EventFilters } from '@/utils/f
 import { ALL_CATEGORIES } from '@/utils/categories';
 import { timeAgo, formatDateTime } from '@/utils/date';
 import { useNow } from '@/hooks/useNow';
+import { useLang } from '@/i18n/LanguageContext';
 import type { NormalizedEvent, EventCategory } from '@/types/common';
 import type { GibsLayer } from '@/types/nasa';
 
@@ -50,17 +51,17 @@ export function EventExplorer({
   gibs,
   emptyWhenNoConfig,
 }: Props) {
+  const { t } = useLang();
   const [filters, setFilters] = useState<EventFilters>(DEFAULT_FILTERS);
   const [selected, setSelected] = useState<NormalizedEvent | null>(null);
   const now = useNow(30_000);
 
   const filtered = useMemo(() => applyEventFilters(events, filters), [events, filters]);
 
-  // Active categories for the map: follow filter when set, else all available.
-  const activeCategories = useMemo<EventCategory[]>(() => {
-    if (filters.categories.length > 0) return filters.categories;
-    return availableCategories;
-  }, [filters.categories, availableCategories]);
+  const activeCategories = useMemo<EventCategory[]>(
+    () => (filters.categories.length > 0 ? filters.categories : availableCategories),
+    [filters.categories, availableCategories],
+  );
 
   const [showGibs, setShowGibs] = useState(false);
 
@@ -68,18 +69,20 @@ export function EventExplorer({
     <div className="space-y-4">
       {/* Status header */}
       <div className="flex flex-wrap items-center gap-3 card px-4 py-3">
-        <StatusDot status={status} label={stale ? 'Cached' : undefined} />
+        <StatusDot status={status} label={stale ? t('status.cached') : undefined} />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-slate-200">
-            {events.length.toLocaleString()} records loaded
+            {events.length.toLocaleString()} {t('status.records')}
           </p>
           <p className="text-[11px] text-slate-500">
             {attribution}
-            {lastUpdated ? ` · updated ${timeAgo(lastUpdated, now)} (${formatDateTime(lastUpdated)})` : ''}
+            {lastUpdated
+              ? ` · ${t('status.updated')} ${timeAgo(lastUpdated, now)} (${formatDateTime(lastUpdated)})`
+              : ''}
           </p>
         </div>
         <Button onClick={onRefresh} loading={loading} variant="outline" size="sm" icon={<RefreshCw size={14} />}>
-          Refresh
+          {t('common.refresh')}
         </Button>
       </div>
 
@@ -87,27 +90,34 @@ export function EventExplorer({
         <div className="card p-4 flex items-start gap-3 border-accent-rose/20" role="alert">
           <AlertTriangle size={18} className="text-accent-rose shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-slate-200">Data source unavailable</p>
+            <p className="text-sm font-medium text-slate-200">{t('error.sourceUnavailable')}</p>
             <p className="text-xs text-slate-400 mt-0.5">{error}</p>
           </div>
-          <Button onClick={onRefresh} variant="outline" size="sm">Retry</Button>
+          <Button onClick={onRefresh} variant="outline" size="sm">
+            {t('common.retry')}
+          </Button>
         </div>
       )}
 
       {emptyWhenNoConfig && events.length === 0 && !loading && !error ? (
-        <div className="card p-6">{emptyWhenNoConfig.node ?? (
-          <div className="text-center">
-            <p className="text-sm font-semibold text-slate-200">{emptyWhenNoConfig.title}</p>
-            <p className="text-sm text-slate-400 mt-1 max-w-xl mx-auto">{emptyWhenNoConfig.description}</p>
-          </div>
-        )}</div>
+        <div className="card p-6">
+          {emptyWhenNoConfig.node ?? (
+            <div className="text-center">
+              <p className="text-sm font-semibold text-slate-200">{emptyWhenNoConfig.title}</p>
+              <p className="text-sm text-slate-400 mt-1 max-w-xl mx-auto">{emptyWhenNoConfig.description}</p>
+            </div>
+          )}
+        </div>
       ) : (
         <>
           <WorldMap
             events={events}
             activeCategories={activeCategories}
             onToggleCategory={(cat) =>
-              setFilters((f) => ({ ...f, categories: f.categories.includes(cat) ? f.categories.filter((c) => c !== cat) : [...f.categories, cat] }))
+              setFilters((f) => ({
+                ...f,
+                categories: f.categories.includes(cat) ? f.categories.filter((c) => c !== cat) : [...f.categories, cat],
+              }))
             }
             heightClass={mapHeight}
             center={mapCenter}
@@ -130,7 +140,7 @@ export function EventExplorer({
 
           {loading && events.length === 0 ? (
             <div className="card p-8 flex items-center justify-center gap-2 text-slate-400">
-              <Spinner size={16} /> Loading events…
+              <Spinner size={16} /> {t('common.loading')}
             </div>
           ) : (
             <EventTable

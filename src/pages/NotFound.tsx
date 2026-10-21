@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import { Compass } from 'lucide-react';
+import { useLang } from '@/i18n/LanguageContext';
 
 export default function NotFound() {
+  const { t } = useLang();
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="card max-w-md w-full p-8 text-center">
@@ -9,12 +11,10 @@ export default function NotFound() {
           <Compass size={26} />
         </div>
         <p className="text-5xl font-bold text-slate-100 tracking-tight">404</p>
-        <h1 className="mt-2 text-lg font-semibold text-slate-200">Off the map</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          That page isn&apos;t in our orbit. Try one of the navigation links.
-        </p>
-        <Link to="/" className="btn btn-primary mt-5">
-          Return to dashboard
+        <h1 className="mt-2 text-lg font-semibold text-slate-200">{t('about.back')}</h1>
+        <p className="mt-1 text-sm text-slate-400">{t('events.note')}</p>
+        <Link to="/" className="btn btn-primary mt-5 min-h-[44px]">
+          {t('about.back')}
         </Link>
       </div>
     </div>

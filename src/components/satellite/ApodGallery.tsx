@@ -7,21 +7,22 @@ import { EmptyState, ErrorState } from '@/components/ui/EmptyState';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { truncate } from '@/utils/format';
+import { useLang } from '@/i18n/LanguageContext';
 import type { ApodItem } from '@/types/nasa';
 
-function ApodCard({ item, onOpen }: { item: ApodItem; onOpen: () => void }) {
+function ApodCard({ item, onOpen, videoLabel, imgFailLabel }: { item: ApodItem; onOpen: () => void; videoLabel: string; imgFailLabel: string }) {
   const [errored, setErrored] = useState(false);
   return (
     <button type="button" onClick={onOpen} className="card overflow-hidden text-left group p-0">
       <div className="relative aspect-[4/3] bg-space-900 overflow-hidden">
         {item.mediaType === 'video' ? (
           <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-xs p-3 text-center">
-            Video APOD — open for player
+            {videoLabel}
           </div>
         ) : errored ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-600 gap-2">
             <ImageOff size={26} />
-            <span className="text-[11px]">Image unavailable</span>
+            <span className="text-[11px]">{imgFailLabel}</span>
           </div>
         ) : (
           <img
@@ -33,9 +34,9 @@ function ApodCard({ item, onOpen }: { item: ApodItem; onOpen: () => void }) {
           />
         )}
         <div className="absolute top-2 left-2 pill bg-space-950/70 text-accent-violet border border-white/10">
-          <Sparkles size={12} /> Astronomy
+          <Sparkles size={12} />
         </div>
-        <div className="absolute bottom-2 left-2 right-2 flex items-center gap-1.5 pill bg-space-950/70 text-slate-300 border border-white/10 max-w-fit">
+        <div className="absolute bottom-2 left-2 pill bg-space-950/70 text-slate-300 border border-white/10 max-w-fit">
           <Calendar size={12} /> {item.date}
         </div>
       </div>
@@ -48,10 +49,10 @@ function ApodCard({ item, onOpen }: { item: ApodItem; onOpen: () => void }) {
 }
 
 export function ApodGallery() {
+  const { t } = useLang();
   const { data, loading, error, refresh } = useApodGallery(9);
   const [active, setActive] = useState<ApodItem | null>(null);
 
-  // Reset lightbox when gallery reloads.
   useEffect(() => {
     if (loading) setActive(null);
   }, [loading]);
@@ -59,20 +60,17 @@ export function ApodGallery() {
   return (
     <Card>
       <CardHeader
-        title="Astronomy Picture of the Day (APOD)"
-        subtitle="NASA — astronomy imagery, clearly distinct from Earth observation"
+        title={t('sat.apodTitle')}
+        subtitle={t('sat.apodSubtitle')}
         icon={<Sparkles size={16} className="text-accent-violet" />}
         action={
           <Button onClick={refresh} loading={loading} variant="outline" size="sm" icon={<RefreshCw size={14} />}>
-            Shuffle
+            {t('sat.apodShuffle')}
           </Button>
         }
       />
 
-      <p className="text-xs text-slate-400 mb-4">
-        These are astronomy images (stars, galaxies, phenomena), not satellite photos of Earth. For Earth
-        imagery, see the GIBS explorer below.
-      </p>
+      <p className="text-xs text-slate-400 mb-4">{t('sat.apodNote')}</p>
 
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -90,20 +88,26 @@ export function ApodGallery() {
 
       {!loading && error && (
         <ErrorState
-          title="Could not load APOD"
-          description={`${error}${error.includes('Rate limit') || error.includes('429') ? ' — the shared DEMO_KEY may be exhausted for now.' : ''}`}
+          title={t('sat.apodLoadFail')}
+          description={`${error}${error.includes('429') || error.includes('Rate') ? ' — ' + t('sat.apodDemoNote') : ''}`}
           onRetry={refresh}
         />
       )}
 
       {!loading && !error && data && data.length === 0 && (
-        <EmptyState title="No APOD items returned" description="Try shuffling again." />
+        <EmptyState title={t('sat.apodNoItems')} description={t('sat.apodNoItemsDesc')} />
       )}
 
       {!loading && !error && data && data.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {data.map((item) => (
-            <ApodCard key={item.date + item.url} item={item} onOpen={() => setActive(item)} />
+            <ApodCard
+              key={item.date + item.url}
+              item={item}
+              onOpen={() => setActive(item)}
+              videoLabel={t('sat.apodVideo')}
+              imgFailLabel={t('sat.apodImgFail')}
+            />
           ))}
         </div>
       )}
@@ -116,7 +120,7 @@ export function ApodGallery() {
         footer={
           active?.url ? (
             <a href={active.url} target="_blank" rel="noreferrer noopener" className="btn btn-outline">
-              <ExternalLink size={15} /> Open full size
+              <ExternalLink size={15} /> {t('common.viewSource')}
             </a>
           ) : undefined
         }
@@ -135,12 +139,7 @@ export function ApodGallery() {
               </div>
             ) : (
               <div className="rounded-xl overflow-hidden border border-white/10 bg-space-900 max-h-[60vh] flex items-center justify-center">
-                <img
-                  src={active.hdurl || active.url}
-                  alt={active.title}
-                  className="max-h-[60vh] w-auto mx-auto"
-                  loading="lazy"
-                />
+                <img src={active.hdurl || active.url} alt={active.title} className="max-h-[60vh] w-auto mx-auto" loading="lazy" />
               </div>
             )}
             <div className="flex items-center gap-2 text-xs text-slate-400">

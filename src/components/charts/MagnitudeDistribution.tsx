@@ -12,6 +12,7 @@ import {
 import type { NormalizedEvent } from '@/types/common';
 import { MAGNITUDE_BANDS } from '@/utils/format';
 import { ChartShell, CHART_GRID } from './ChartShell';
+import { useLang } from '@/i18n/LanguageContext';
 
 interface Props {
   events: NormalizedEvent[];
@@ -39,14 +40,15 @@ export function useMagnitudeDistribution(events: NormalizedEvent[]): BarDatum[] 
 export function MagnitudeDistribution({ events }: Props) {
   const data = useMagnitudeDistribution(events);
   const isEmpty = data.every((d) => d.count === 0);
+  const { t } = useLang();
 
   return (
     <ChartShell
-      title="Earthquake magnitude distribution"
-      subtitle="Count of events by magnitude band (from loaded USGS data)"
+      title={t('chart.magDist')}
+      subtitle={t('chart.magDistSub')}
       isEmpty={isEmpty}
-      emptyTitle="No earthquake data loaded"
-      emptyDescription="Earthquake magnitudes will appear here once USGS data loads."
+      emptyTitle={t('chart.noQuake')}
+      emptyDescription={t('chart.noQuakeDesc')}
       height={240}
     >
       <ResponsiveContainer>
@@ -57,7 +59,7 @@ export function MagnitudeDistribution({ events }: Props) {
           <Tooltip
             cursor={{ fill: 'rgba(255,255,255,0.04)' }}
             contentStyle={{ background: 'rgba(13,18,32,0.96)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#e2e8f0', fontSize: 12 }}
-            formatter={(v: number) => [`${v} events`, '']}
+            formatter={(v: number) => [`${v} ${t('chart.eventsLabel')}`, '']}
           />
           <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={64}>
             {data.map((d) => (

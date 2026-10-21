@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import { Satellite, CalendarDays, Info, ExternalLink } from 'lucide-react';
-import { GIBS_LAYERS, gibsTileTemplate, GIBS_ATTRIBUTION, GIBS_EARLIEST } from '@/services/gibs';
+import { Satellite, CalendarDays, Info, ExternalLink, AlertTriangle } from 'lucide-react';
+import { GIBS_LAYERS, gibsTileTemplate, GIBS_ATTRIBUTION, GIBS_EARLIEST, gibsMaxSelectableDate } from '@/services/gibs';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Select, Field } from '@/components/ui/Select';
 import { toIsoDate } from '@/utils/date';
@@ -16,11 +16,20 @@ export function GibsExplorer() {
   const [layerId, setLayerId] = useState<string>(GIBS_LAYERS[0].id);
   const layer = useMemo<GibsLayer>(() => GIBS_LAYERS.find((l) => l.id === layerId) ?? GIBS_LAYERS[0], [layerId]);
 
-  const today = toIsoDate(Date.now() - 86_400_000); // yesterday (today may be incomplete)
-  const [date, setDate] = useState<string>(layer.defaultDate ?? today);
+  // Default selected date: yesterday, which has reliably processed imagery.
+  const defaultSelected = toIsoDate(Date.now() - 86_400_000);
+  const [date, setDate] = useState<string>(layer.defaultDate ?? defaultSelected);
 
-  const maxDate = toIsoDate(Date.now() - 86_400_000);
+  // Maximum selectable date = the real current UTC date (never a future date).
+  const maxDate = gibsMaxSelectableDate();
   const overlayUrl = useMemo(() => gibsTileTemplate(layer, date), [layer, date]);
+
+  // Surface overlay tile failures so users know when a date has no imagery
+  // (e.g. today before processing, or a date before a layer existed).
+  const [overlayError, setOverlayError] = useState(false);
+  useEffect(() => {
+    setOverlayError(false);
+  }, [date, layerId]);
 
   const onLayerChange = (id: string) => {
     const next = GIBS_LAYERS.find((l) => l.id === id);
@@ -86,8 +95,19 @@ export function GibsExplorer() {
                 maxNativeZoom={layer.maxLevel}
                 maxZoom={12}
                 tileSize={256}
+                eventHandlers={{
+                  tileerror: () => setOverlayError(true),
+                }}
               />
             </MapContainer>
+            {overlayError && (
+              <div
+                className="absolute top-2 left-1/2 -translate-x-1/2 ew-glass-dark rounded-xl px-3 py-2 flex items-center gap-2 text-xs text-accent-amber max-w-[92%]"
+                role="status"
+              >
+                <AlertTriangle size={14} /> {t('sat.imageryUnavailable')}
+              </div>
+            )}
             <div className="absolute bottom-2 left-2 ew-glass-dark rounded-lg px-2 py-1 text-[10px] text-slate-100 pointer-events-none">
               {layer.title} · {date} UTC
             </div>

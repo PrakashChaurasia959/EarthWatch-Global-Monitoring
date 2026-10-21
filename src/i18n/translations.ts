@@ -335,6 +335,10 @@ export const STRINGS = {
   'sat.gibsDate': { hi: 'तस्वीर तारीख (UTC)', en: 'Imagery date (UTC)' },
   'sat.gibsInfo': { hi: 'दैनिक परतें कुछ घंटों में उपलब्ध होती हैं।', en: 'Daily layers typically become available within a few hours.' },
   'sat.gibsWorldview': { hi: 'NASA Worldview में खोलें', en: 'Open in NASA Worldview' },
+  'sat.imageryUnavailable': {
+    hi: 'इस तारीख के लिए कुछ तस्वीर उपलब्ध नहीं हो सकी। दूसरी तारीख आज़माएँ।',
+    en: 'Some imagery for this date could not be loaded. Try another date.',
+  },
   'sat.aboutResources': { hi: 'इन स्रोतों के बारे में', en: 'About these resources' },
   'sat.res1': { hi: 'NASA GIBS पूरे-ग्लोब की रोज़ाना MODIS व VIIRS तस्वीरें देता है — पूर्ण सार्वजनिक, कुंजी रहित। हम EPSG:3857 WMTS उपयोग करते हैं।', en: 'NASA GIBS provides full-globe, daily satellite imagery from MODIS and VIIRS. It is fully public and requires no API key. We use the EPSG:3857 WMTS endpoint.' },
   'sat.res2': { hi: 'NASA APOD खगोल तस्वीरें दिखाता है — यहाँ अलग से, पृथ्वी तस्वीर नहीं।', en: 'NASA APOD shows astronomy imagery — shown here separately and is intentionally not presented as satellite imagery of Earth.' },

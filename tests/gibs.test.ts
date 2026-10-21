@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { gibsTileTemplate, GIBS_LAYERS, GIBS_EARLIEST } from '@/services/gibs';
+import {
+  gibsTileTemplate,
+  GIBS_LAYERS,
+  GIBS_EARLIEST,
+  gibsMaxSelectableDate,
+  isGibsDateSelectable,
+} from '@/services/gibs';
 
 describe('GIBS service', () => {
   it('every curated layer is raster with a verified matrix set + maxLevel', () => {
@@ -27,5 +33,47 @@ describe('GIBS service', () => {
 
   it('exposes a sensible earliest-date bound', () => {
     expect(GIBS_EARLIEST).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe('GIBS selectable date range (calendar fix)', () => {
+  // A fixed "now" so assertions are deterministic: 2026-10-21T23:00:00Z.
+  const NOW = Date.UTC(2026, 9, 21, 23, 0, 0);
+  const TODAY = '2026-10-21';
+  const YESTERDAY = '2026-10-20';
+  const TOMORROW = '2026-10-22';
+
+  it('max selectable date is the real current UTC date (not yesterday, not future)', () => {
+    expect(gibsMaxSelectableDate(NOW)).toBe(TODAY);
+    expect(gibsMaxSelectableDate(NOW)).not.toBe(YESTERDAY);
+  });
+
+  it('the selectable range is valid: earliest <= today', () => {
+    expect(GIBS_EARLIEST <= gibsMaxSelectableDate(NOW)).toBe(true);
+  });
+
+  it('accepts yesterday, today, and supported historical dates', () => {
+    expect(isGibsDateSelectable(YESTERDAY, NOW)).toBe(true);
+    expect(isGibsDateSelectable(TODAY, NOW)).toBe(true);
+    expect(isGibsDateSelectable('2020-06-15', NOW)).toBe(true);
+    expect(isGibsDateSelectable(GIBS_EARLIEST, NOW)).toBe(true);
+  });
+
+  it('rejects future dates (tomorrow and beyond)', () => {
+    expect(isGibsDateSelectable(TOMORROW, NOW)).toBe(false);
+    expect(isGibsDateSelectable('2027-01-01', NOW)).toBe(false);
+  });
+
+  it('rejects dates before the earliest supported GIBS date', () => {
+    expect(isGibsDateSelectable('2012-05-07', NOW)).toBe(false);
+    expect(isGibsDateSelectable('2000-01-01', NOW)).toBe(false);
+  });
+
+  it('does not restrict the default selected layer date to yesterday (today is allowed)', () => {
+    // The bug previously forced the max to yesterday; today must now be selectable.
+    const layerDefaults = GIBS_LAYERS.map((l) => l.defaultDate).filter(Boolean) as string[];
+    for (const d of layerDefaults) {
+      expect(isGibsDateSelectable(d, NOW)).toBe(true);
+    }
   });
 });

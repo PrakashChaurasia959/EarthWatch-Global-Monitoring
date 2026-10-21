@@ -118,3 +118,18 @@ export const GIBS_ATTRIBUTION = 'Imagery © NASA GIBS';
 
 /** Earliest date most curated layers are available from. */
 export const GIBS_EARLIEST = '2012-05-08';
+
+/**
+ * The maximum selectable imagery date = the real current UTC date.
+ * Future dates are never allowed. `now` is parameterized for deterministic
+ * testing. (The previous implementation used yesterday, which incorrectly
+ * blocked the current UTC date.)
+ */
+export function gibsMaxSelectableDate(now: number = Date.now()): string {
+  return toIsoDate(now);
+}
+
+/** True when `date` is within the supported GIBS range [GIBS_EARLIEST, today]. */
+export function isGibsDateSelectable(date: string, now: number = Date.now()): boolean {
+  return date >= GIBS_EARLIEST && date <= gibsMaxSelectableDate(now);
+}
